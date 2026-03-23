@@ -1,10 +1,10 @@
-import React, { useState } from 'react';
-import { createRoom, joinRoom } from '../lib/supabase';
+import React, { useState, useEffect } from 'react';
+import { createRoom, joinRoom, subscribeToRoom, supabase } from '../lib/supabase';
 
 export default function Lobby({ playerId, onRoomReady }) {
   const [name, setName] = useState('');
   const [joinCode, setJoinCode] = useState('');
-  const [mode, setMode] = useState(null); // 'create' | 'join'
+  const [mode, setMode] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [createdCode, setCreatedCode] = useState('');
@@ -73,7 +73,6 @@ export default function Lobby({ playerId, onRoomReady }) {
       padding: 20,
     }}>
       <div style={{ maxWidth: 420, width: '100%', textAlign: 'center' }}>
-        {/* Title */}
         <div style={{ marginBottom: 40 }}>
           <div style={{ fontSize: 56, marginBottom: 8 }}>🃏</div>
           <h1 style={{
@@ -89,7 +88,6 @@ export default function Lobby({ playerId, onRoomReady }) {
           </p>
         </div>
 
-        {/* Name input always visible */}
         <div style={{ marginBottom: 20 }}>
           <input
             style={inputStyle}
@@ -111,11 +109,11 @@ export default function Lobby({ playerId, onRoomReady }) {
         )}
 
         {mode === 'create' && !createdCode && (
-          <div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
             <button style={btnStyle(true)} onClick={handleCreate} disabled={loading}>
               {loading ? 'Création...' : 'Créer la salle'}
             </button>
-            <button style={{ ...btnStyle(false), marginTop: 10 }} onClick={() => setMode(null)}>
+            <button style={{ ...btnStyle(false) }} onClick={() => setMode(null)}>
               Retour
             </button>
           </div>
@@ -139,11 +137,9 @@ export default function Lobby({ playerId, onRoomReady }) {
           </div>
         )}
 
-        {/* Room created — waiting for guest */}
         {createdCode && (
           <WaitingForGuest
             code={createdCode}
-            playerId={playerId}
             playerName={name}
             onRoomReady={onRoomReady}
           />
@@ -157,11 +153,10 @@ export default function Lobby({ playerId, onRoomReady }) {
   );
 }
 
-function WaitingForGuest({ code, playerId, playerName, onRoomReady }) {
+function WaitingForGuest({ code, playerName, onRoomReady }) {
   const [copied, setCopied] = useState(false);
-  const { supabase, subscribeToRoom } = require('../lib/supabase');
 
-  React.useEffect(() => {
+  useEffect(() => {
     const channel = subscribeToRoom(code, (room) => {
       if (room.status === 'ready' && room.guest_id) {
         onRoomReady(room, playerName, 'host');
